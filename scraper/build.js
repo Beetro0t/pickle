@@ -23,14 +23,7 @@ const ROOT = path.join(__dirname, "..");
 const DATA = path.join(ROOT, "data");
 
 function ensurePodplayCache() {
-  const cachePath = path.join(__dirname, "cache", "podplay.json");
   if (process.env.SKIP_PODPLAY === "1") return;
-  let needs = true;
-  try {
-    const stat = fs.statSync(cachePath);
-    needs = Date.now() - stat.mtimeMs > 12 * 60 * 60 * 1000;
-  } catch {}
-  if (!needs) return;
   try {
     console.log("refreshing PodPlay public calendar...");
     execFileSync(process.execPath, [path.join(__dirname, "podplay-fetch.js")], { stdio: "inherit", timeout: 5 * 60 * 1000 });
