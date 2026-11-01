@@ -1,0 +1,54 @@
+name: Refresh listings (manual only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: scraper/cache
+          key: scraper-${{ github.run_id }}
+          restore-keys: scraper-
+      - run: npx playwright install --with-deps chromium
+      - run: npm run scrape
+      - name: Check refreshed data
+        run: node scripts/check-data.js
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /pickle
+          NEXT_PUBLIC_SITE_URL: https://beetro0t.github.io/pickle
+      - name: Save refreshed public listings
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/events.json data/sources.json data/scrape-report.json data/merge-review.json data/localities.json data/source-snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh public pickleball listings"
+            git push
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+      - name: Publish refreshed website
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.env*
+!.env.example
+.freebuff/
+scraper/cache/
+scraper/raw/
+data/submissions.json
